@@ -1,0 +1,69 @@
+---
+title: "dynamic regression"
+author: "Joe Despres"
+date: "10/14/2021"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(fpp3)
+library(Quandl)
+
+
+Quandl_API_KEY <- Sys.getenv("Quandl_API_KEY")
+Quandl.api_key(api_key = Quandl_API_KEY)
+soy_beans <- Quandl("COM/SOYB_MEAL") |> as_tsibble()
+heating_oil <- Quandl("FRED/WHOILNYH") |> as_tsibble()
+
+soy_beans <- soy_beans |> as_tsibble()
+
+```
+```{r}
+autoplot(heating_oil)
+```
+
+
+
+```{r}
+aus_cafe_model <- aus_retail %>%
+  filter(
+    Industry == "Cafes, restaurants and takeaway food services",
+    year(Month) %in% 2004:2018
+  ) %>%
+  summarise(Value = sum(Turnover)) |> 
+  model(ts_k1 = TSLM(Value ~ trend() + fourier(K=1)),
+        ts_k2 = TSLM(Value ~ trend() + fourier(K=2)),
+        ts_k3 = TSLM(Value ~ trend() + fourier(K=3)),
+        ts_k4 = TSLM(Value ~ trend() + fourier(K=4)),
+        ) 
+```
+ 
+```{r}
+aus_cafe_model |> 
+  augment() |> 
+  ggplot(aes(x = Month)) + 
+  geom_line(aes(y = Value))
+
+aus_cafe
+```
+```{r}
+aus_cafe + 
+  geom_line(aes(y = .fitted), color = "red", size = 0.25) + 
+  facet_wrap(~.model)
+```
+
+```{r}
+aus_cafe_model |> 
+  select(ts_k2) |> 
+  report()
+```
+
+
+
+
+$$
+{\hat {y}={\hat {\beta }}_{0}+{\hat \{\beta }}_{1}\operatorname{trend}+ \sum_{k=1}^K \beta_3 sin\frac{2\pi kt}{m} + \cos}
+$$

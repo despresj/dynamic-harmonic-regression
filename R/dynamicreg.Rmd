@@ -5,7 +5,6 @@ date: "10/14/2021"
 output: html_document
 ---
 
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -15,16 +14,22 @@ library(Quandl)
 
 Quandl_API_KEY <- Sys.getenv("Quandl_API_KEY")
 Quandl.api_key(api_key = Quandl_API_KEY)
-soy_beans <- Quandl("COM/SOYB_MEAL") |> as_tsibble()
-heating_oil <- Quandl("FRED/WHOILNYH") |> as_tsibble()
-
-soy_beans <- soy_beans |> as_tsibble()
-
 ```
+
+```{r}
+# Quandl.search("Soy", database_code = c("FRED", "NSE"), per_page = 10)
+```
+
+```{r}
+soy_beans <- Quandl("COM/SOYB_MEAL") |> as_tsibble()
+wti <- Quandl("FRED/DCOILWTICO") |> as_tsibble()
+heating_oil <- Quandl("FRED/WHOILNYH") |> as_tsibble()
+```
+
 ```{r}
 autoplot(heating_oil)
+autoplot(soy_beans)
 ```
-
 
 
 ```{r}
@@ -35,20 +40,19 @@ aus_cafe_model <- aus_retail %>%
   ) %>%
   summarise(Value = sum(Turnover)) |> 
   model(ts_k1 = TSLM(Value ~ trend() + fourier(K=1)),
-        ts_k2 = TSLM(Value ~ trend() + fourier(K=2)),
-        ts_k3 = TSLM(Value ~ trend() + fourier(K=3)),
+        # ts_k2 = TSLM(Value ~ trend() + fourier(K=2)),
+        # ts_k3 = TSLM(Value ~ trend() + fourier(K=3)),
         ts_k4 = TSLM(Value ~ trend() + fourier(K=4)),
         ) 
 ```
  
 ```{r}
-aus_cafe_model |> 
+aus_cafe <- aus_cafe_model |> 
   augment() |> 
   ggplot(aes(x = Month)) + 
   geom_line(aes(y = Value))
-
-aus_cafe
 ```
+
 ```{r}
 aus_cafe + 
   geom_line(aes(y = .fitted), color = "red", size = 0.25) + 
@@ -57,13 +61,16 @@ aus_cafe +
 
 ```{r}
 aus_cafe_model |> 
-  select(ts_k2) |> 
+  select(ts_k1) |> 
   report()
 ```
 
-
-
+```{r}
+aus_cafe_model |> 
+  select(ts_k4) |> 
+  report()
+```
 
 $$
-{\hat {y}={\hat {\beta }}_{0}+{\hat \{\beta }}_{1}\operatorname{trend}+ \sum_{k=1}^K \beta_3 sin\frac{2\pi kt}{m} + \cos}
+\hat y = \beta_0 + \beta_1 + \sum_{k=1}^K \Bigg[ \beta_2 sin\frac{2\pi kt}{m} + \beta_3 cos \frac{2\pi kt}{m} \Bigg]
 $$

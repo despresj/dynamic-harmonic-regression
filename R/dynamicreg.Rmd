@@ -31,7 +31,6 @@ autoplot(heating_oil)
 autoplot(soy_beans)
 ```
 
-
 ```{r}
 aus_cafe_model <- aus_retail %>%
   filter(
